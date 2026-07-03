@@ -21,14 +21,19 @@ jobs:
       - name: Verify Flutter installation
         run: flutter --version
 
-      - name: Get Flutter dependencies
-        run: flutter pub get
-
       - name: Create Flutter project structure
         run: |
+          # Se la cartella android non esiste, crea la struttura completa
           if [ ! -d "android" ]; then
-            flutter create . --platforms android
+            echo "Creating Flutter project structure..."
+            flutter create . --platforms android,ios
+            echo "Flutter project created successfully"
+          else
+            echo "Android folder already exists, skipping flutter create"
           fi
+
+      - name: Get Flutter dependencies
+        run: flutter pub get
 
       - name: Create .env file from secrets
         env:
@@ -39,6 +44,7 @@ jobs:
           SUPABASE_URL=$SUPABASE_URL
           SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
           EOF
+          echo ".env file created"
 
       - name: Build APK (Debug)
         run: flutter build apk --debug
