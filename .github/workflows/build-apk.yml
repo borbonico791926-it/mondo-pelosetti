@@ -1,19 +1,42 @@
-# Backup pubspec.yaml e lib
-if [ -f pubspec.yaml ]; then
-  mv pubspec.yaml pubspec.yaml.backup
-fi
-if [ -d lib ]; then
-  mv lib lib.backup
-fi
+name: Build APK
 
-# Crea skeleton completo
-flutter create . --platforms android,ios --no-offline
+on:
+  push:
+    branches:
+      - main
 
-# Ripristina file custom
-if [ -f pubspec.yaml.backup ]; then
-  mv pubspec.yaml.backup pubspec.yaml
-fi
-if [ -d lib.backup ]; then
-  rm -rf lib
-  mv lib.backup lib
-fi
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create Flutter App
+        run: |
+          cd ..
+          flutter create --platforms=android mondo_pelosetti_temp
+          cp -r mondo_pelosetti_temp/android mondo-pelosetti/
+          cd mondo-pelosetti
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Build APK
+        run: |
+          flutter pub get
+          flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: build/app/outputs/flutter-apk/app-release.apk
