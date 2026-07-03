@@ -23,7 +23,7 @@ jobs:
           channel: 'stable'
 
       - name: Build APK
-        run:
+        run: |
           flutter create --platforms=android --force .
           flutter pub get
           flutter build apk --release
