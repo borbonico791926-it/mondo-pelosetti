@@ -1,8 +1,19 @@
-name: Build APK
-on:
-workflow_dispatch:
-jobs:
-build:
-runs-on: ubuntu-latest
-steps:
--  uses:  actions/checkout@v4
+# Backup pubspec.yaml e lib
+if [ -f pubspec.yaml ]; then
+  mv pubspec.yaml pubspec.yaml.backup
+fi
+if [ -d lib ]; then
+  mv lib lib.backup
+fi
+
+# Crea skeleton completo
+flutter create . --platforms android,ios --no-offline
+
+# Ripristina file custom
+if [ -f pubspec.yaml.backup ]; then
+  mv pubspec.yaml.backup pubspec.yaml
+fi
+if [ -d lib.backup ]; then
+  rm -rf lib
+  mv lib.backup lib
+fi
