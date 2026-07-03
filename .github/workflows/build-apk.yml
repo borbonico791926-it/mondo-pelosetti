@@ -13,11 +13,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - name: Set up Java JDK
+        uses: actions/setup-java@v3
         with:
+          java-version: '11'
           distribution: 'temurin'
-          java-version: '17'
+          cache: gradle
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -26,12 +27,12 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Create Flutter project structure (FIRST STEP)
+      - name: Create Flutter project structure with FORCE flag
         run: |
           echo "=========================================="
           echo "STEP 1: Creating Flutter Android structure"
           echo "=========================================="
-          flutter create --platforms=android .
+          flutter create --platforms=android --force .
           echo ""
           echo "Flutter project structure created successfully"
           echo ""
@@ -89,6 +90,12 @@ jobs:
           [ -f "pubspec.yaml" ] && echo "✓ pubspec.yaml exists" || echo "✗ MISSING: pubspec.yaml"
           [ -f ".env" ] && echo "✓ .env file exists" || echo "✗ MISSING: .env file"
           echo ""
+          echo "Full directory structure:"
+          ls -la
+          echo ""
+          echo "Android gradle files:"
+          ls -la android/
+          echo ""
           echo "=========================================="
 
       - name: Build APK (Debug)
@@ -133,6 +140,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Success Summary
+        if: success()
         run: |
           echo "=========================================="
           echo "✓ BUILD COMPLETED SUCCESSFULLY"
@@ -141,7 +149,18 @@ jobs:
           echo "APK Details:"
           ls -lh build/app/outputs/flutter-apk/app-debug.apk
           echo ""
-          echo "Download link will be available in:"
+          echo "Download link available at:"
           echo "${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ github.run_number }}"
+          echo ""
+          echo "=========================================="
+
+      - name: Build Failure Summary
+        if: failure()
+        run: |
+          echo "=========================================="
+          echo "✗ BUILD FAILED"
+          echo "=========================================="
+          echo ""
+          echo "Check the logs above for details"
           echo ""
           echo "=========================================="
