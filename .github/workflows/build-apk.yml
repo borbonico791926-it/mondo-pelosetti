@@ -27,7 +27,24 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Verify Flutter and Java installation
+      - name: Create Flutter project structure (FIRST STEP)
+        run: |
+          echo "=========================================="
+          echo "STEP 1: Creating Flutter Android structure"
+          echo "=========================================="
+          flutter create --platforms=android .
+          echo ""
+          echo "Flutter project structure created successfully"
+          echo ""
+          echo "Verifying created structure:"
+          ls -la | head -20
+          echo ""
+          echo "Android folder contents:"
+          ls -la android/
+          echo ""
+          echo "=========================================="
+
+      - name: Verify Flutter installation
         run: |
           echo "Flutter version:"
           flutter --version
@@ -37,46 +54,6 @@ jobs:
           echo ""
           echo "Flutter doctor:"
           flutter doctor -v
-
-      - name: Create Flutter blank app skeleton
-        run: |
-          echo "Creating Flutter app skeleton..."
-          
-          # Backup file personalizzati se esistono
-          if [ -f pubspec.yaml ]; then
-            cp pubspec.yaml pubspec.yaml.backup
-          fi
-          if [ -d lib ]; then
-            cp -r lib lib.backup
-          fi
-          
-          # Crea skeleton completo Flutter
-          flutter create . --platforms android --org com.example
-          
-          # Ripristina file personalizzati
-          if [ -f pubspec.yaml.backup ]; then
-            mv pubspec.yaml.backup pubspec.yaml
-          fi
-          if [ -d lib.backup ]; then
-            rm -rf lib
-            mv lib.backup lib
-          fi
-          
-          echo "Flutter skeleton created successfully"
-
-      - name: Verify project structure
-        run: |
-          echo "Checking critical folders and files..."
-          echo ""
-          [ -d "android" ] && echo "✓ android folder exists" || echo "✗ MISSING: android folder"
-          [ -d "lib" ] && echo "✓ lib folder exists" || echo "✗ MISSING: lib folder"
-          [ -f "pubspec.yaml" ] && echo "✓ pubspec.yaml exists" || echo "✗ MISSING: pubspec.yaml"
-          [ -d "android/app" ] && echo "✓ android/app exists" || echo "✗ MISSING: android/app"
-          [ -f "android/build.gradle" ] && echo "✓ android/build.gradle exists" || echo "✗ MISSING: android/build.gradle"
-          [ -f "android/app/build.gradle" ] && echo "✓ android/app/build.gradle exists" || echo "✗ MISSING: android/app/build.gradle"
-          echo ""
-          echo "Full directory structure:"
-          ls -la
 
       - name: Get Flutter dependencies
         run: |
@@ -89,21 +66,44 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          echo "Creating .env file..."
+          echo "Creating .env file from secrets..."
           cat > .env << EOF
           SUPABASE_URL=$SUPABASE_URL
           SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
           EOF
           echo ".env file created successfully"
+          echo ""
+          echo "Verifying .env:"
+          cat .env
 
-      - name: Build Flutter for Android (APK Debug)
+      - name: Verify project structure
         run: |
-          echo "Building APK debug..."
+          echo "=========================================="
+          echo "Project Structure Verification"
+          echo "=========================================="
+          echo ""
+          [ -d "android" ] && echo "✓ android folder exists" || echo "✗ MISSING: android folder"
+          [ -d "android/app" ] && echo "✓ android/app exists" || echo "✗ MISSING: android/app"
+          [ -f "android/build.gradle" ] && echo "✓ android/build.gradle exists" || echo "✗ MISSING: android/build.gradle"
+          [ -f "android/app/build.gradle" ] && echo "✓ android/app/build.gradle exists" || echo "✗ MISSING: android/app/build.gradle"
+          [ -d "lib" ] && echo "✓ lib folder exists" || echo "✗ MISSING: lib folder"
+          [ -f "pubspec.yaml" ] && echo "✓ pubspec.yaml exists" || echo "✗ MISSING: pubspec.yaml"
+          [ -f ".env" ] && echo "✓ .env file exists" || echo "✗ MISSING: .env file"
+          echo ""
+          echo "=========================================="
+
+      - name: Build APK (Debug)
+        run: |
+          echo "=========================================="
+          echo "Building APK..."
+          echo "=========================================="
           flutter build apk --debug
+          echo ""
           echo "APK build completed"
           echo ""
-          echo "Output APK location:"
+          echo "Output APK:"
           ls -lh build/app/outputs/flutter-apk/app-debug.apk
+          echo "=========================================="
 
       - name: Create GitHub Release
         id: create_release
@@ -113,8 +113,11 @@ jobs:
           release_name: Mondo-Pelosetti APK v${{ github.run_number }}
           body: |
             Automatic build of Mondo-Pelosetti APK (Debug)
-            Built on: ${{ github.event.head_commit.timestamp }}
-            Commit: ${{ github.event.head_commit.message }}
+            
+            Build Details:
+            - Built on: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            - Branch: ${{ github.ref }}
+            - Commit: ${{ github.sha }}
           draft: false
           prerelease: false
         env:
@@ -130,21 +133,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Summary
-        if: always()
+      - name: Build Success Summary
         run: |
           echo "=========================================="
-          echo "BUILD SUMMARY"
+          echo "✓ BUILD COMPLETED SUCCESSFULLY"
           echo "=========================================="
-          echo "Repository: ${{ github.repository }}"
-          echo "Branch: ${{ github.ref }}"
-          echo "Run Number: ${{ github.run_number }}"
-          echo "Commit: ${{ github.sha }}"
           echo ""
-          if [ -f build/app/outputs/flutter-apk/app-debug.apk ]; then
-            echo "✓ APK built successfully"
-            ls -lh build/app/outputs/flutter-apk/app-debug.apk
-          else
-            echo "✗ APK build failed - file not found"
-          fi
+          echo "APK Details:"
+          ls -lh build/app/outputs/flutter-apk/app-debug.apk
+          echo ""
+          echo "Download link will be available in:"
+          echo "${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ github.run_number }}"
+          echo ""
           echo "=========================================="
