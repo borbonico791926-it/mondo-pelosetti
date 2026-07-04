@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
@@ -17,7 +19,10 @@ class MondoPelosettiApp extends StatelessWidget {
     return MaterialApp(
       title: 'Mondo Pelosetti',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(useMaterial3: true, colorScheme: ColorScheme.fromSeed(seedColor: Colors.amber)),
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.amber),
+      ),
       home: const AuthScreen(),
     );
   }
@@ -46,7 +51,9 @@ class _AuthScreenState extends State<AuthScreen> {
           password: _passwordController.text.trim(),
         );
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Registrazione completata! Controlla l\'email.')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Registrazione completata! Controlla la tua email.')),
+          );
         }
       } else {
         await Supabase.instance.client.auth.signInWithPassword(
@@ -58,7 +65,9 @@ class _AuthScreenState extends State<AuthScreen> {
         }
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Errore: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Errore: $e')));
+      }
     } finally {
       if (mounted) setState(() { _isLoading = false; });
     }
@@ -71,7 +80,9 @@ class _AuthScreenState extends State<AuthScreen> {
         redirectTo: 'io.supabase.mondopelosetti://login-callback',
       );
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Errore Google Login: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Errore Google Login: $e')));
+      }
     }
   }
 
@@ -99,11 +110,25 @@ class _AuthScreenState extends State<AuthScreen> {
               const SizedBox(height: 20),
               const Icon(Icons.pets, size: 80, color: Colors.amber),
               const SizedBox(height: 20),
-              Text(_isSignUp ? 'Crea un nuovo account' : 'Bentornato su Mondo Pelosetti!', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+              Text(
+                _isSignUp ? 'Crea un nuovo account' : 'Bentornato su Mondo Pelosetti!',
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 30),
-              TextFormField(controller: _emailController, decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder()), keyboardType: TextInputType.emailAddress, validator: (v) => v == null || v.isEmpty ? 'Inserisci l\'email' : null),
+              TextFormField(
+                controller: _emailController,
+                decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder()),
+                keyboardType: TextInputType.emailAddress,
+                validator: (v) => v == null || v.isEmpty ? 'Inserisci l\'email' : null,
+              ),
               const SizedBox(height: 20),
-              TextFormField(controller: _passwordController, decoration: const InputDecoration(labelText: 'Password', border: OutlineInputBorder()), obscureText: true, validator: (v) => v == null || v.length < 6 ? 'La password deve avere almeno 6 caratteri' : null),
+              TextFormField(
+                controller: _passwordController,
+                decoration: const InputDecoration(labelText: 'Password', border: OutlineInputBorder()),
+                obscureText: true,
+                validator: (v) => v == null || v.length < 6 ? 'La password deve avere almeno 6 caratteri' : null,
+              ),
               const SizedBox(height: 30),
               _isLoading
                   ? const Center(child: CircularProgressIndicator())
@@ -120,7 +145,10 @@ class _AuthScreenState extends State<AuthScreen> {
                 style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 10)),
               ),
               const SizedBox(height: 20),
-              TextButton(onPressed: () => setState(() { _isSignUp = !_isSignUp; }), child: Text(_isSignUp ? 'Hai già un account? Accedi' : 'Non hai un account? Registrati')),
+              TextButton(
+                onPressed: () => setState(() { _isSignUp = !_isSignUp; }),
+                child: Text(_isSignUp ? 'Hai già un account? Accedi' : 'Non hai un account? Registrati'),
+              ),
             ],
           ),
         ),
@@ -148,7 +176,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadReports() async {
     setState(() { _isLoading = true; });
     try {
-      final List<dynamic> data = await Supabase.instance.client.from('reports').select().order('created_at', ascending: false);
+      final List<dynamic> data = await Supabase.instance.client
+          .from('reports')
+          .select()
+          .order('created_at', ascending: false);
       setState(() { _reports = data; _isLoading = false; });
     } catch (e) {
       setState(() { _isLoading = false; });
@@ -157,7 +188,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _logout() async {
     await Supabase.instance.client.auth.signOut();
-    if (mounted) Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AuthScreen()));
+    if (mounted) {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AuthScreen()));
+    }
   }
 
   @override
@@ -168,7 +201,9 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Colors.amber,
         centerTitle: true,
         leading: IconButton(icon: const Icon(Icons.logout, color: Colors.white), onPressed: _logout),
-        actions: [IconButton(icon: const Icon(Icons.refresh, color: Colors.white), onPressed: _loadReports)],
+        actions: [
+          IconButton(icon: const Icon(Icons.refresh, color: Colors.white), onPressed: _loadReports),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -228,7 +263,9 @@ class _ReportScreenState extends State<ReportScreen> {
         });
         if (mounted) Navigator.pop(context);
       } catch (e) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Errore invio: $e')));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Errore invio: $e')));
+        }
       }
     }
   }
@@ -243,14 +280,3 @@ class _ReportScreenState extends State<ReportScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Nuova Segnalazione 📢', style: TextStyle(color: Colors.white)), backgroundColor: Colors.amber),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              DropdownButtonFormField<String>(
-                value: _type,
