@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 void main() {
   runApp(const MondoPelosettiApp());
@@ -96,6 +99,44 @@ class _ReportScreenState extends State<ReportScreen> {
   String _type = 'Smarrito';
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
+  
+  String _locationStatus = "Posizione non acquisita";
+  String _imageStatus = "Nessuna foto selezionata";
+
+  // Funzione per acquisire il GPS
+  Future<void> _getLocation() async {
+    var status = await Permission.location.request();
+    if (status.isGranted) {
+      setState(() { _locationStatus = "Acquisizione in corso..."; });
+      try {
+        Position position = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.high);
+        setState(() {
+          _locationStatus = "📍 Lat: ${position.latitude.toStringAsFixed(4)}, Lon: ${position.longitude.toStringAsFixed(4)}";
+        });
+      } catch (e) {
+        setState(() { _locationStatus = "Errore nel recupero GPS"; });
+      }
+    } else {
+      setState(() { _locationStatus = "Permesso GPS negato"; });
+    }
+  }
+
+  // Funzione per scattare/scegliere una foto
+  Future<void> _pickImage() async {
+    var status = await Permission.camera.request();
+    if (status.isGranted) {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+      if (image != null) {
+        setState(() {
+          _imageStatus = "📸 Foto selezionata correttamente!";
+        });
+      }
+    } else {
+      setState(() { _imageStatus = "Permesso fotocamera negato"; });
+    }
+  }
 
   @override
   void dispose() {
@@ -130,9 +171,7 @@ class _ReportScreenState extends State<ReportScreen> {
                         ))
                     .toList(),
                 onChanged: (value) {
-                  setState(() {
-                    _type = value!;
-                  });
+                  setState(() { _type = value!; });
                 },
               ),
               const SizedBox(height: 20),
@@ -143,27 +182,54 @@ class _ReportScreenState extends State<ReportScreen> {
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Inserisci un titolo';
-                  }
+                  if (value == null || value.isEmpty) return 'Inserisci un titolo';
                   return null;
                 },
               ),
               const SizedBox(height: 20),
               TextFormField(
                 controller: _descriptionController,
-                maxLines: 4,
+                maxLines: 3,
                 decoration: const InputDecoration(
-                  labelText: 'Descrizione (es. razza, colore, collare, zona)',
+                  labelText: 'Descrizione (es. razza, colore, dettagli)',
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Inserisci una descrizione dettagliata';
-                  }
+                  if (value == null || value.isEmpty) return 'Inserisci una descrizione';
                   return null;
                 },
               ),
+              const SizedBox(height: 20),
+              
+              // Sezione Allegati (Foto e Posizione)
+              Card(
+                color: Colors.amber.shade50,
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.location_on, color: Colors.amber),
+                        title: Text(_locationStatus, style: const TextStyle(fontSize: 14)),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.gps_fixed, color: Colors.blue),
+                          onPressed: _getLocation,
+                        ),
+                      ),
+                      const Divider(),
+                      ListTile(
+                        leading: const Icon(Icons.image, color: Colors.amber),
+                        title: Text(_imageStatus, style: const TextStyle(fontSize: 14)),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.add_a_photo, color: Colors.blue),
+                          onPressed: _pickImage,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              
               const SizedBox(height: 30),
               ElevatedButton(
                 onPressed: () {
