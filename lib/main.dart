@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -63,7 +62,6 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     } catch (e) {
       setState(() { _isLoading = false; });
-      debugPrint("Errore: $e");
     }
   }
 
@@ -133,7 +131,6 @@ class _ReportScreenState extends State<ReportScreen> {
   String _type = 'Smarrito';
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  
   final _specieController = TextEditingController();
   final _breedController = TextEditingController();
   
@@ -156,7 +153,7 @@ class _ReportScreenState extends State<ReportScreen> {
         }
       }
     } catch (e) {
-      debugPrint("Errore specie: $e");
+      debugPrint("Errore: $e");
     }
   }
 
@@ -165,7 +162,7 @@ class _ReportScreenState extends State<ReportScreen> {
       setState(() { _breedSuggestions = []; });
       return;
     }
-    String specieContext = _specieController.text.isNotEmpty ? "${_specieController.text} " : "";
+    String contextText = _specieController.text.isNotEmpty ? "${_specieController.text} " : "";
     try {
       final response = await http.get(Uri.parse('https://wikipedia.org'));
       if (response.statusCode == 200) {
@@ -173,13 +170,13 @@ class _ReportScreenState extends State<ReportScreen> {
         if (data.length > 1 && data[1] is List) {
           setState(() {
             _breedSuggestions = List<String>.from(data[1]).map((item) {
-              return item.replaceAll(RegExp(specieContext, caseSensitive: false), '').trim();
+              return item.replaceAll(RegExp(contextText, caseSensitive: false), '').trim();
             }).toList();
           });
         }
       }
     } catch (e) {
-      debugPrint("Errore razze: $e");
+      debugPrint("Errore: $e");
     }
   }
 
@@ -193,14 +190,10 @@ class _ReportScreenState extends State<ReportScreen> {
           'animal_specie': _specieController.text,
           'animal_breed': _breedController.text,
         });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Segnalazione salvata online con successo! 🎉')),
-        );
         Navigator.pop(context);
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Errore nell\'invio: $e')),
+          SnackBar(content: Text('Errore: $e')),
         );
       }
     }
@@ -236,50 +229,53 @@ class _ReportScreenState extends State<ReportScreen> {
                 onChanged: (value) => setState(() { _type = value!; }),
               ),
               const SizedBox(height: 20),
-              
               TextFormField(
                 controller: _specieController,
-                decoration: const InputDecoration(
-                  labelText: 'Tipo di animale (es: Cane, Gatto...)', 
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.search),
-                ),
+                decoration: const InputDecoration(labelText: 'Tipo di animale', border: OutlineInputBorder()),
                 onChanged: _searchSpeciesExternal,
-                validator: (value) => value == null || value.isEmpty ? 'Inserisci il tipo di animale' : null,
+                validator: (value) => value == null || value.isEmpty ? 'Inserisci la specie' : null,
               ),
               if (_speciesSuggestions.isNotEmpty)
                 Container(
-                  height: 120,
-                  margin: const EdgeInsets.only(bottom: 10),
-                  decoration: BoxDecoration(border: Border.all(color: Colors.amber)),
+                  height: 100,
+                  color: Colors.amber.shade50,
                   child: ListView.builder(
                     itemCount: _speciesSuggestions.length,
-                    itemBuilder: (context, idx) {
-                      return ListTile(
-                        title: Text(_speciesSuggestions[idx]),
-                        dense: true,
-                        onTap: () {
-                          setState(() {
-                            _specieController.text = _speciesSuggestions[idx];
-                            _speciesSuggestions = [];
-                          });
-                        },
-                      );
-                    },
+                    itemBuilder: (context, idx) => ListTile(
+                      title: Text(_speciesSuggestions[idx]),
+                      dense: true,
+                      onTap: () => setState(() {
+                        _specieController.text = _speciesSuggestions[idx];
+                        _speciesSuggestions = [];
+                      }),
+                    ),
                   ),
                 ),
               const SizedBox(height: 20),
-
               TextFormField(
                 controller: _breedController,
-                decoration: const InputDecoration(
-                  labelText: 'Razza (es: Pastore Tedesco, Siamese...)', 
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.pets),
-                ),
+                decoration: const InputDecoration(labelText: 'Razza', border: OutlineInputBorder()),
                 onChanged: _searchBreedsExternal,
               ),
               if (_breedSuggestions.isNotEmpty)
                 Container(
-                  height: 120,
-                  margin: const EdgeInsets.only(bottom: 10),
+                  height: 100,
+                  color: Colors.amber.shade50,
+                  child: ListView.builder(
+                    itemCount: _breedSuggestions.length,
+                    itemBuilder: (context, idx) => ListTile(
+                      title: Text(_breedSuggestions[idx]),
+                      dense: true,
+                      onTap: () => setState(() {
+                        _breedController.text = _breedSuggestions[idx];
+                        _breedSuggestions = [];
+                      }),
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: _titleController,
+                decoration: const InputDecoration(labelText: 'Titolo', border: OutlineInputBorder()),
+                validator: (value) => value == null || value.isEmpty ? 'Inserisci un titolo' : null,
+              ),
