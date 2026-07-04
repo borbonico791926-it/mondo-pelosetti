@@ -73,7 +73,7 @@ class _AuthScreenState extends State<AuthScreen> {
         redirectTo: 'io.supabase.mondopelosetti://login-callback',
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Errore Google Login: $e')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Errore Google Login: $e')));
     }
   }
 
@@ -230,15 +230,16 @@ class _ReportScreenState extends State<ReportScreen> {
           setState(() { _specieList = List<String>.from(data[1]); });
         }
       }
-    } catch (e) { debugPrint("$e"); }
+    } catch (e) {
+      debugPrint("Errore: $e");
+    }
   }
 
   Future<void> _searchBreed(String q) async {
     if (q.isEmpty) { setState(() { _breedList = []; }); return; }
-    String ctx = _specie.text.isNotEmpty ? "${_specie.text} " : "";
+    String queryCompleta = _specie.text.isNotEmpty ? "${_specie.text} $q" : q;
     try {
       final res = await http.get(Uri.parse('https://wikipedia.org'));
       if (res.statusCode == 200) {
         final List<dynamic> data = jsonDecode(res.body);
         if (data.length > 1 && data[1] is List) {
-          setState(() {
