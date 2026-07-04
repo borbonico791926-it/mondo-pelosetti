@@ -26,13 +26,11 @@ class MondoPelosettiApp extends StatelessWidget {
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.amber),
       ),
-      // L'app ora parte dalla schermata di Login
       home: const AuthScreen(),
     );
   }
 }
 
-// NUOVA SCHERMATA: LOGIN E REGISTRAZIONE
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
 
@@ -59,7 +57,7 @@ class _AuthScreenState extends State<AuthScreen> {
         );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Registrazione completata! Controlla la tua email per confermare.')),
+            const SnackBar(content: Text('Registrazione completata! Controlla la tua email.')),
           );
         }
       } else {
@@ -80,7 +78,6 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
-  // ACCEDI CON GOOGLE ACCOUNT
   Future<void> _loginWithGoogle() async {
     try {
       await Supabase.instance.client.auth.signInWithOAuth(
@@ -266,9 +263,13 @@ class _ReportScreenState extends State<ReportScreen> {
     try {
       final res = await http.get(Uri.parse('https://wikipedia.org'));
       if (res.statusCode == 200) {
-        final List<dynamic> data = json.decode(res.body);
-        if (data.length > 1 && data is List) { setState(() { _specieList = List<String>.from(data); }); }
+        final List<dynamic> data = jsonDecode(res.body);
+        if (data.length > 1 && data[1] is List) {
+          setState(() { _specieList = List<String>.from(data[1]); });
+        }
       }
     } catch (e) { debugPrint("$e"); }
   }
 
+  Future<void> _searchBreed(String q) async {
+    if (q.isEmpty) { setState(() { _breedList = []; }); return; }
