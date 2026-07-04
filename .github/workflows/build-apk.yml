@@ -17,6 +17,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17' 
+          
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -25,12 +26,12 @@ jobs:
       - name: Build APK
         run: |
           flutter clean
-          flutter create --platforms=android  .
-          flutter pub get --no.
+          flutter create --platforms=android .
+          flutter pub get
           flutter build apk --release
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-release
-          patch: build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/app-release.apk
