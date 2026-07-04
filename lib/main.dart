@@ -7,7 +7,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Collegamento ufficiale al tuo database Mondo Pelosetti (Mantenuto intatto)
   await Supabase.initialize(
     url: 'https://supabase.co',
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB3bXlra3NpZHNqcWttZG50d2FtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5OTE1ODQsImV4cCI6MjA5ODU2NzU4NH0.kAeYDYFIryV3CA_HZgo5LNXWCxt0K21I6Q2KxIINlE8',
@@ -64,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     } catch (e) {
       setState(() { _isLoading = false; });
-      debugPrint("Errore caricamento: $e");
+      debugPrint("Errore: $e");
     }
   }
 
@@ -135,15 +134,12 @@ class _ReportScreenState extends State<ReportScreen> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   
-  // Nuovi controller per la ricerca esterna
   final _specieController = TextEditingController();
   final _breedController = TextEditingController();
   
   List<String> _speciesSuggestions = [];
   List<String> _breedSuggestions = [];
-  bool _searchingExternal = false;
 
-  // Cerca le specie animali da un server/API esterno (es: Wikipedia API o dizionario faunistico aperto)
   Future<void> _searchSpeciesExternal(String query) async {
     if (query.isEmpty) {
       setState(() { _speciesSuggestions = []; });
@@ -152,19 +148,18 @@ class _ReportScreenState extends State<ReportScreen> {
     try {
       final response = await http.get(Uri.parse('https://wikipedia.org'));
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.statusCode == 200 ? response.body : '[]');
-        if (data.length > 1) {
+        final List<dynamic> data = json.decode(response.body);
+        if (data.length > 1 && data[1] is List) {
           setState(() {
             _speciesSuggestions = List<String>.from(data[1]);
           });
         }
       }
     } catch (e) {
-      debugPrint("Errore ricerca esterna: $e");
+      debugPrint("Errore specie: $e");
     }
   }
 
-  // Cerca le razze da un server/API esterno (es: Wikipedia API o database razze)
   Future<void> _searchBreedsExternal(String query) async {
     if (query.isEmpty) {
       setState(() { _breedSuggestions = []; });
@@ -175,7 +170,7 @@ class _ReportScreenState extends State<ReportScreen> {
       final response = await http.get(Uri.parse('https://wikipedia.org'));
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
-        if (data.length > 1) {
+        if (data.length > 1 && data[1] is List) {
           setState(() {
             _breedSuggestions = List<String>.from(data[1]).map((item) {
               return item.replaceAll(RegExp(specieContext, caseSensitive: false), '').trim();
@@ -184,7 +179,7 @@ class _ReportScreenState extends State<ReportScreen> {
         }
       }
     } catch (e) {
-      debugPrint("Errore ricerca razze: $e");
+      debugPrint("Errore razze: $e");
     }
   }
 
@@ -195,8 +190,8 @@ class _ReportScreenState extends State<ReportScreen> {
           'type': _type,
           'title': _titleController.text,
           'description': _descriptionController.text,
-          'animal_specie': _specieController.text, // Salva la specie trovata sul server
-          'animal_breed': _breedController.text,   // Salva la razza trovata sul server
+          'animal_specie': _specieController.text,
+          'animal_breed': _breedController.text,
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -242,11 +237,10 @@ class _ReportScreenState extends State<ReportScreen> {
               ),
               const SizedBox(height: 20),
               
-              // Barra di ricerca esterna per l'Animale (Specie)
               TextFormField(
                 controller: _specieController,
                 decoration: const InputDecoration(
-                  labelText: 'Cerca tipo di animale (es: Cane, Gatto, Pappagallo...)', 
+                  labelText: 'Tipo di animale (es: Cane, Gatto...)', 
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.search),
                 ),
@@ -255,13 +249,15 @@ class _ReportScreenState extends State<ReportScreen> {
               ),
               if (_speciesSuggestions.isNotEmpty)
                 Container(
-                  height: 150,
-                  color: Colors.grey[100],
+                  height: 120,
+                  margin: const EdgeInsets.only(bottom: 10),
+                  decoration: BoxDecoration(border: Border.all(color: Colors.amber)),
                   child: ListView.builder(
                     itemCount: _speciesSuggestions.length,
                     itemBuilder: (context, idx) {
                       return ListTile(
                         title: Text(_speciesSuggestions[idx]),
+                        dense: true,
                         onTap: () {
                           setState(() {
                             _specieController.text = _speciesSuggestions[idx];
@@ -274,7 +270,16 @@ class _ReportScreenState extends State<ReportScreen> {
                 ),
               const SizedBox(height: 20),
 
-              // Barra di ricerca esterna per la Razza
               TextFormField(
                 controller: _breedController,
                 decoration: const InputDecoration(
+                  labelText: 'Razza (es: Pastore Tedesco, Siamese...)', 
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.pets),
+                ),
+                onChanged: _searchBreedsExternal,
+              ),
+              if (_breedSuggestions.isNotEmpty)
+                Container(
+                  height: 120,
+                  margin: const EdgeInsets.only(bottom: 10),
