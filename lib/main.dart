@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Collegamento ufficiale al tuo database Mondo Pelosetti
+  await Supabase.initialize(
+    url: 'https://supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB3bXlra3NpZHNqcWttZG50d2FtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5OTE1ODQsImV4cCI6MjA5ODU2NzU4NH0.kAeYDYFIryV3CA_HZgo5LNXWCxt0K21I6Q2KxIINlE8',
+  );
+
   runApp(const MondoPelosettiApp());
 }
 
@@ -17,71 +26,91 @@ class MondoPelosettiApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.amber,
-          primary: Colors.amber,
-        ),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.amber),
       ),
       home: const HomeScreen(),
     );
   }
 }
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final List<Marker> _markers = [];
+  GoogleMapController? _mapController;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadReportsFromSupabase();
+  }
+
+  // Scarica le segnalazioni dal database online e le mette sulla mappa
+  Future<void> _loadReportsFromSupabase() async {
+    try {
+      final List<dynamic> data = await Supabase.instance.client
+          .from('reports')
+          .select();
+
+      setState(() {
+        _markers.clear();
+        for (var report in data) {
+          if (report['latitude'] != null && report['longitude'] != null) {
+            _markers.add(
+              Marker(
+                markerId: MarkerId(report['id'].toString()),
+                position: LatLng(report['latitude'], report['longitude']),
+                infoWindow: InfoWindow(
+                  title: report['title'],
+                  snippet: "${report['type']}: ${report['description']}",
+                ),
+              ),
+            );
+          }
+        }
+      });
+    } catch (e) {
+      debugPrint("Errore nel caricamento dati: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Mondo Pelosetti 🐾',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-        ),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        centerTitle: true,
+        title: const Text('Mondo Pelosetti 🐾', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        backgroundColor: Colors.amber,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: _loadReportsFromSupabase,
+          )
+        ],
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.pets,
-                size: 80,
-                color: Colors.amber,
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Benvenuto su Mondo Pelosetti!',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 10),
-              const Text(
-                'L\'app per segnalare e aiutare gli animali smarriti o feriti nella tua zona.',
-                style: TextStyle(fontSize: 16, color: Colors.grey),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 40),
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const ReportScreen()),
-                  );
-                },
-                icon: const Icon(Icons.report_problem),
-                label: const Text('Invia una Segnalazione'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
+      body: GoogleMap(
+        initialCameraPosition: const CameraPosition(
+          target: LatLng(41.9028, 12.4964), // Inizia centrata sull'Italia
+          zoom: 6,
         ),
+        markers: Set.from(_markers),
+        onMapCreated: (controller) => _mapController = controller,
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ReportScreen()),
+          );
+          _loadReportsFromSupabase(); // Aggiorna la mappa al ritorno
+        },
+        label: const Text('Segnala'),
+        icon: const Icon(Icons.add),
+        backgroundColor: Colors.amber,
       ),
     );
   }
@@ -100,41 +129,49 @@ class _ReportScreenState extends State<ReportScreen> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   
+  Position? _currentPosition;
   String _locationStatus = "Posizione non acquisita";
-  String _imageStatus = "Nessuna foto selezionata";
 
-  // Funzione per acquisire il GPS
+  // Cattura la posizione GPS del telefono
   Future<void> _getLocation() async {
     var status = await Permission.location.request();
     if (status.isGranted) {
-      setState(() { _locationStatus = "Acquisizione in corso..."; });
+      setState(() { _locationStatus = "Acquisizione..."; });
       try {
-        Position position = await Geolocator.getCurrentPosition(
-            desiredAccuracy: LocationAccuracy.high);
+        Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
         setState(() {
-          _locationStatus = "📍 Lat: ${position.latitude.toStringAsFixed(4)}, Lon: ${position.longitude.toStringAsFixed(4)}";
+          _currentPosition = position;
+          _locationStatus = "📍 Posizione acquisita correttamente";
         });
       } catch (e) {
-        setState(() { _locationStatus = "Errore nel recupero GPS"; });
+        setState(() { _locationStatus = "Errore GPS"; });
       }
     } else {
-      setState(() { _locationStatus = "Permesso GPS negato"; });
+      setState(() { _locationStatus = "Permesso negato"; });
     }
   }
 
-  // Funzione per scattare/scegliere una foto
-  Future<void> _pickImage() async {
-    var status = await Permission.camera.request();
-    if (status.isGranted) {
-      final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-      if (image != null) {
-        setState(() {
-          _imageStatus = "📸 Foto selezionata correttamente!";
+  // Invia i dati inseriti nel modulo direttamente al database online
+  Future<void> _submitReport() async {
+    if (_formKey.currentState!.validate()) {
+      try {
+        await Supabase.instance.client.from('reports').insert({
+          'type': _type,
+          'title': _titleController.text,
+          'description': _descriptionController.text,
+          'latitude': _currentPosition?.latitude,
+          'longitude': _currentPosition?.longitude,
         });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Segnalazione salvata online con successo! 🎉')),
+        );
+        Navigator.pop(context);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Errore durante l\'invio online: $e')),
+        );
       }
-    } else {
-      setState(() { _imageStatus = "Permesso fotocamera negato"; });
     }
   }
 
@@ -158,90 +195,43 @@ class _ReportScreenState extends State<ReportScreen> {
           key: _formKey,
           child: ListView(
             children: [
-              const Text(
-                'Seleziona il tipo di segnalazione:',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
               DropdownButtonFormField<String>(
                 value: _type,
                 items: ['Smarrito', 'Avvistato', 'Ferito', 'In Pericolo']
-                    .map((label) => DropdownMenuItem(
-                          value: label,
-                          child: Text(label),
-                        ))
+                    .map((label) => DropdownMenuItem(value: label, child: Text(label)))
                     .toList(),
-                onChanged: (value) {
-                  setState(() { _type = value!; });
-                },
+                onChanged: (value) => setState(() { _type = value!; }),
               ),
               const SizedBox(height: 20),
               TextFormField(
                 controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Titolo (es. Cane smarrito, Gatto ferito)',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) return 'Inserisci un titolo';
-                  return null;
-                },
+                decoration: const InputDecoration(labelText: 'Titolo', border: OutlineInputBorder()),
+                validator: (value) => value == null || value.isEmpty ? 'Inserisci un titolo' : null,
               ),
               const SizedBox(height: 20),
               TextFormField(
                 controller: _descriptionController,
                 maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: 'Descrizione (es. razza, colore, dettagli)',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) return 'Inserisci una descrizione';
-                  return null;
-                },
+                decoration: const InputDecoration(labelText: 'Descrizione', border: OutlineInputBorder()),
+                validator: (value) => value == null || value.isEmpty ? 'Inserisci una descrizione' : null,
               ),
               const SizedBox(height: 20),
-              
-              // Sezione Allegati (Foto e Posizione)
               Card(
                 color: Colors.amber.shade50,
-                child: Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Column(
-                    children: [
-                      ListTile(
-                        leading: const Icon(Icons.location_on, color: Colors.amber),
-                        title: Text(_locationStatus, style: const TextStyle(fontSize: 14)),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.gps_fixed, color: Colors.blue),
-                          onPressed: _getLocation,
-                        ),
-                      ),
-                      const Divider(),
-                      ListTile(
-                        leading: const Icon(Icons.image, color: Colors.amber),
-                        title: Text(_imageStatus, style: const TextStyle(fontSize: 14)),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.add_a_photo, color: Colors.blue),
-                          onPressed: _pickImage,
-                        ),
-                      ),
-                    ],
+                child: ListTile(
+                  leading: const Icon(Icons.location_on, color: Colors.amber),
+                  title: Text(_locationStatus, style: const TextStyle(fontSize: 14)),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.gps_fixed, color: Colors.blue),
+                    onPressed: _getLocation,
                   ),
                 ),
               ),
-              
               const SizedBox(height: 30),
               ElevatedButton(
-                onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Segnalazione salvata localmente!')),
-                    );
-                    Navigator.pop(context);
-                  }
-                },
+                onPressed: _submitReport,
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
-                child: const Text('Invia Segnalazione', style: TextStyle(color: Colors.white)),
+                child: const Text('Invia Online', style: TextStyle(color: Colors.white)),
               ),
             ],
           ),
