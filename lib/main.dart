@@ -235,9 +235,10 @@ class _ReportScreenState extends State<ReportScreen> {
 
   Future<void> _searchBreed(String q) async {
     if (q.isEmpty) { setState(() { _breedList = []; }); return; }
-    String queryCompleta = _specie.text.isNotEmpty ? "${_specie.text} $q" : q;
+    String ctx = _specie.text.isNotEmpty ? "${_specie.text} " : "";
     try {
       final res = await http.get(Uri.parse('https://wikipedia.org'));
       if (res.statusCode == 200) {
         final List<dynamic> data = jsonDecode(res.body);
         if (data.length > 1 && data[1] is List) {
+          setState(() {
