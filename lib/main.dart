@@ -1,6 +1,4 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
@@ -48,7 +46,7 @@ class _AuthScreenState extends State<AuthScreen> {
           password: _passwordController.text.trim(),
         );
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Registrazione completata! Controlla la tua email.')));
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Registrazione completata! Controlla l\'email.')));
         }
       } else {
         await Supabase.instance.client.auth.signInWithPassword(
@@ -217,29 +215,42 @@ class _ReportScreenState extends State<ReportScreen> {
   final _desc = TextEditingController();
   final _specie = TextEditingController();
   final _breed = TextEditingController();
-  List<String> _specieList = [];
-  List<String> _breedList = [];
 
-  Future<void> _searchSpecie(String q) async {
-    if (q.isEmpty) { setState(() { _specieList = []; }); return; }
-    try {
-      final res = await http.get(Uri.parse('https://wikipedia.org'));
-      if (res.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(res.body);
-        if (data.length > 1 && data[1] is List) {
-          setState(() { _specieList = List<String>.from(data[1]); });
-        }
+  Future<void> _submit() async {
+    if (_formKey.currentState!.validate()) {
+      try {
+        await Supabase.instance.client.from('reports').insert({
+          'type': _type,
+          'title': _title.text,
+          'description': _desc.text,
+          'animal_specie': _specie.text,
+          'animal_breed': _breed.text,
+        });
+        if (mounted) Navigator.pop(context);
+      } catch (e) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Errore invio: $e')));
       }
-    } catch (e) {
-      debugPrint("Errore: $e");
     }
   }
 
-  Future<void> _searchBreed(String q) async {
-    if (q.isEmpty) { setState(() { _breedList = []; }); return; }
-    String queryCompleta = _specie.text.isNotEmpty ? "${_specie.text} $q" : q;
-    try {
-      final res = await http.get(Uri.parse('https://wikipedia.org'));
-      if (res.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(res.body);
-        if (data.length > 1 && data[1] is List) {
+  @override
+  void dispose() {
+    _title.dispose();
+    _desc.dispose();
+    _specie.dispose();
+    _breed.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Nuova Segnalazione 📢', style: TextStyle(color: Colors.white)), backgroundColor: Colors.amber),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            children: [
+              DropdownButtonFormField<String>(
+                value: _type,
