@@ -53,14 +53,5 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # Disattivati temporaneamente perché le cartelle non esistono nel progetto
-  # assets:
-  #   - assets/
-  #   - .env
-
-  # fonts:
-  #   - family: Roboto
-  #     fonts:
-  #       - asset: fonts/Roboto-Regular.ttf
-  #       - asset: fonts/Roboto-Bold.ttf
-  #         weight: 700
+  assets:
+    - assets/
