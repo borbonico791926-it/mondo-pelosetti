@@ -1,11 +1,13 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Collegamento al tuo database Mondo Pelosetti
+  // Collegamento ufficiale al tuo database Mondo Pelosetti (Mantenuto intatto)
   await Supabase.initialize(
     url: 'https://supabase.co',
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB3bXlra3NpZHNqcWttZG50d2FtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5OTE1ODQsImV4cCI6MjA5ODU2NzU4NH0.kAeYDYFIryV3CA_HZgo5LNXWCxt0K21I6Q2KxIINlE8',
@@ -48,7 +50,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadReportsFromSupabase();
   }
 
-  // Scarica le segnalazioni in tempo reale dal database online
   Future<void> _loadReportsFromSupabase() async {
     setState(() { _isLoading = true; });
     try {
@@ -98,7 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: Icon(Icons.pets, color: Colors.white),
                         ),
                         title: Text(report['title'] ?? 'Senza titolo', style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text("${report['type']}\n${report['description']}"),
+                        subtitle: Text("${report['type']} • ${report['animal_specie'] ?? 'Non specificato'} (${report['animal_breed'] ?? 'Meticcio'})\n${report['description']}"),
                         trailing: const Icon(Icons.chevron_right),
                         isThreeLine: true,
                       ),
@@ -111,7 +112,7 @@ class _HomeScreenState extends State<HomeScreen> {
             context,
             MaterialPageRoute(builder: (context) => const ReportScreen()),
           );
-          _loadReportsFromSupabase(); // Rinfresca la lista quando torni indietro
+          _loadReportsFromSupabase();
         },
         label: const Text('Nuova Segnalazione'),
         icon: const Icon(Icons.add),
@@ -133,8 +134,60 @@ class _ReportScreenState extends State<ReportScreen> {
   String _type = 'Smarrito';
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
+  
+  // Nuovi controller per la ricerca esterna
+  final _specieController = TextEditingController();
+  final _breedController = TextEditingController();
+  
+  List<String> _speciesSuggestions = [];
+  List<String> _breedSuggestions = [];
+  bool _searchingExternal = false;
 
-  // Invia i dati direttamente a Supabase online
+  // Cerca le specie animali da un server/API esterno (es: Wikipedia API o dizionario faunistico aperto)
+  Future<void> _searchSpeciesExternal(String query) async {
+    if (query.isEmpty) {
+      setState(() { _speciesSuggestions = []; });
+      return;
+    }
+    try {
+      final response = await http.get(Uri.parse('https://wikipedia.org'));
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.statusCode == 200 ? response.body : '[]');
+        if (data.length > 1) {
+          setState(() {
+            _speciesSuggestions = List<String>.from(data[1]);
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Errore ricerca esterna: $e");
+    }
+  }
+
+  // Cerca le razze da un server/API esterno (es: Wikipedia API o database razze)
+  Future<void> _searchBreedsExternal(String query) async {
+    if (query.isEmpty) {
+      setState(() { _breedSuggestions = []; });
+      return;
+    }
+    String specieContext = _specieController.text.isNotEmpty ? "${_specieController.text} " : "";
+    try {
+      final response = await http.get(Uri.parse('https://wikipedia.org'));
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        if (data.length > 1) {
+          setState(() {
+            _breedSuggestions = List<String>.from(data[1]).map((item) {
+              return item.replaceAll(RegExp(specieContext, caseSensitive: false), '').trim();
+            }).toList();
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Errore ricerca razze: $e");
+    }
+  }
+
   Future<void> _submitReport() async {
     if (_formKey.currentState!.validate()) {
       try {
@@ -142,6 +195,8 @@ class _ReportScreenState extends State<ReportScreen> {
           'type': _type,
           'title': _titleController.text,
           'description': _descriptionController.text,
+          'animal_specie': _specieController.text, // Salva la specie trovata sul server
+          'animal_breed': _breedController.text,   // Salva la razza trovata sul server
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -160,6 +215,8 @@ class _ReportScreenState extends State<ReportScreen> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
+    _specieController.dispose();
+    _breedController.dispose();
     super.dispose();
   }
 
@@ -184,31 +241,40 @@ class _ReportScreenState extends State<ReportScreen> {
                 onChanged: (value) => setState(() { _type = value!; }),
               ),
               const SizedBox(height: 20),
+              
+              // Barra di ricerca esterna per l'Animale (Specie)
               TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(labelText: 'Titolo (es. Cane smarrito)', border: OutlineInputBorder()),
-                validator: (value) => value == null || value.isEmpty ? 'Inserisci un titolo' : null,
-              ),
-              const SizedBox(height: 20),
-              TextFormField(
-                controller: _descriptionController,
-                maxLines: 4,
-                decoration: const InputDecoration(labelText: 'Descrizione dei dettagli', border: OutlineInputBorder()),
-                validator: (value) => value == null || value.isEmpty ? 'Inserisci una descrizione' : null,
-              ),
-              const SizedBox(height: 30),
-              ElevatedButton(
-                onPressed: _submitReport,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.amber,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                controller: _specieController,
+                decoration: const InputDecoration(
+                  labelText: 'Cerca tipo di animale (es: Cane, Gatto, Pappagallo...)', 
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.search),
                 ),
-                child: const Text('Invia Online', style: TextStyle(color: Colors.white, fontSize: 16)),
+                onChanged: _searchSpeciesExternal,
+                validator: (value) => value == null || value.isEmpty ? 'Inserisci il tipo di animale' : null,
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+              if (_speciesSuggestions.isNotEmpty)
+                Container(
+                  height: 150,
+                  color: Colors.grey[100],
+                  child: ListView.builder(
+                    itemCount: _speciesSuggestions.length,
+                    itemBuilder: (context, idx) {
+                      return ListTile(
+                        title: Text(_speciesSuggestions[idx]),
+                        onTap: () {
+                          setState(() {
+                            _specieController.text = _speciesSuggestions[idx];
+                            _speciesSuggestions = [];
+                          });
+                        },
+                      );
+                    },
+                  ),
+                ),
+              const SizedBox(height: 20),
+
+              // Barra di ricerca esterna per la Razza
+              TextFormField(
+                controller: _breedController,
+                decoration: const InputDecoration(
