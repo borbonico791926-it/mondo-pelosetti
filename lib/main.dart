@@ -5,27 +5,21 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
   await Supabase.initialize(
     url: 'https://supabase.co',
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB3bXlra3NpZHNqcWttZG50d2FtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5OTE1ODQsImV4cCI6MjA5ODU2NzU4NH0.kAeYDYFIryV3CA_HZgo5LNXWCxt0K21I6Q2KxIINlE8',
   );
-
   runApp(const MondoPelosettiApp());
 }
 
 class MondoPelosettiApp extends StatelessWidget {
   const MondoPelosettiApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Mondo Pelosetti',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.amber),
-      ),
+      theme: ThemeData(useMaterial3: true, colorScheme: ColorScheme.fromSeed(seedColor: Colors.amber)),
       home: const AuthScreen(),
     );
   }
@@ -33,7 +27,6 @@ class MondoPelosettiApp extends StatelessWidget {
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
-
   @override
   State<AuthScreen> createState() => _AuthScreenState();
 }
@@ -48,7 +41,6 @@ class _AuthScreenState extends State<AuthScreen> {
   Future<void> _handleAuth() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() { _isLoading = true; });
-
     try {
       if (_isSignUp) {
         await Supabase.instance.client.auth.signUp(
@@ -56,9 +48,7 @@ class _AuthScreenState extends State<AuthScreen> {
           password: _passwordController.text.trim(),
         );
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Registrazione completata! Controlla la tua email.')),
-          );
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Registrazione completata! Controlla la tua email.')));
         }
       } else {
         await Supabase.instance.client.auth.signInWithPassword(
@@ -70,9 +60,7 @@ class _AuthScreenState extends State<AuthScreen> {
         }
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Errore: $e')));
-      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Errore: $e')));
     } finally {
       if (mounted) setState(() { _isLoading = false; });
     }
@@ -113,25 +101,11 @@ class _AuthScreenState extends State<AuthScreen> {
               const SizedBox(height: 20),
               const Icon(Icons.pets, size: 80, color: Colors.amber),
               const SizedBox(height: 20),
-              Text(
-                _isSignUp ? 'Crea un nuovo account' : 'Bentornato su Mondo Pelosetti!',
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
+              Text(_isSignUp ? 'Crea un nuovo account' : 'Bentornato su Mondo Pelosetti!', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
               const SizedBox(height: 30),
-              TextFormField(
-                controller: _emailController,
-                decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder()),
-                keyboardType: TextInputType.emailAddress,
-                validator: (v) => v == null || v.isEmpty ? 'Inserisci l\'email' : null,
-              ),
+              TextFormField(controller: _emailController, decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder()), keyboardType: TextInputType.emailAddress, validator: (v) => v == null || v.isEmpty ? 'Inserisci l\'email' : null),
               const SizedBox(height: 20),
-              TextFormField(
-                controller: _passwordController,
-                decoration: const InputDecoration(labelText: 'Password', border: OutlineInputBorder()),
-                obscureText: true,
-                validator: (v) => v == null || v.length < 6 ? 'La password deve avere almeno 6 caratteri' : null,
-              ),
+              TextFormField(controller: _passwordController, decoration: const InputDecoration(labelText: 'Password', border: OutlineInputBorder()), obscureText: true, validator: (v) => v == null || v.length < 6 ? 'La password deve avere almeno 6 caratteri' : null),
               const SizedBox(height: 30),
               _isLoading
                   ? const Center(child: CircularProgressIndicator())
@@ -148,10 +122,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 10)),
               ),
               const SizedBox(height: 20),
-              TextButton(
-                onPressed: () => setState(() { _isSignUp = !_isSignUp; }),
-                child: Text(_isSignUp ? 'Hai già un account? Accedi' : 'Non hai un account? Registrati'),
-              ),
+              TextButton(onPressed: () => setState(() { _isSignUp = !_isSignUp; }), child: Text(_isSignUp ? 'Hai già un account? Accedi' : 'Non hai un account? Registrati')),
             ],
           ),
         ),
@@ -162,7 +133,6 @@ class _AuthScreenState extends State<AuthScreen> {
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
-
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -180,11 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadReports() async {
     setState(() { _isLoading = true; });
     try {
-      final List<dynamic> data = await Supabase.instance.client
-          .from('reports')
-          .select()
-          .order('created_at', ascending: false);
-
+      final List<dynamic> data = await Supabase.instance.client.from('reports').select().order('created_at', ascending: false);
       setState(() { _reports = data; _isLoading = false; });
     } catch (e) {
       setState(() { _isLoading = false; });
@@ -193,9 +159,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _logout() async {
     await Supabase.instance.client.auth.signOut();
-    if (mounted) {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AuthScreen()));
-    }
+    if (mounted) Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AuthScreen()));
   }
 
   @override
@@ -206,9 +170,7 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Colors.amber,
         centerTitle: true,
         leading: IconButton(icon: const Icon(Icons.logout, color: Colors.white), onPressed: _logout),
-        actions: [
-          IconButton(icon: const Icon(Icons.refresh, color: Colors.white), onPressed: _loadReports),
-        ],
+        actions: [IconButton(icon: const Icon(Icons.refresh, color: Colors.white), onPressed: _loadReports)],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -273,3 +235,9 @@ class _ReportScreenState extends State<ReportScreen> {
 
   Future<void> _searchBreed(String q) async {
     if (q.isEmpty) { setState(() { _breedList = []; }); return; }
+    String queryCompleta = _specie.text.isNotEmpty ? "${_specie.text} $q" : q;
+    try {
+      final res = await http.get(Uri.parse('https://wikipedia.org'));
+      if (res.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(res.body);
+        if (data.length > 1 && data[1] is List) {
