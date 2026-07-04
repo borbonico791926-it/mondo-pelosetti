@@ -10,9 +10,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  permission_handler: any
+
   # Material Design
-  cupertino_icons: ^1.0.2
+  cupertino_icons: ^1.0.8
 
   # Supabase Backend
   supabase_flutter: ^2.8.0
@@ -33,7 +33,7 @@ dependencies:
   image: ^4.1.0
 
   # Permissions
-  permission_handler: ^11.4.4
+  permission_handler: ^11.3.1
 
   # URL Launcher
   url_launcher: ^6.2.1
