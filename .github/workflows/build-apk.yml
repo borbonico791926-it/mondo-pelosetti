@@ -24,6 +24,7 @@ jobs:
 
       - name: Build APK
         run: |
+          flutter clean
           flutter create --platforms=android  .
           flutter pub get --no.
           flutter build apk --release
