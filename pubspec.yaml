@@ -16,7 +16,6 @@ dependencies:
 
   # Supabase Backend
   supabase_flutter: ^2.8.0
-  supabase: ^1.10.3
 
   # Environment variables
   flutter_dotenv: ^5.1.0
