@@ -67,7 +67,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(const builder: (context) => const MainDashboard()),
+          MaterialPageRoute(builder: (context) => const MainDashboard()),
         );
       }
     } catch (e) {
@@ -197,7 +197,7 @@ class _MainDashboardState extends State<MainDashboard> {
               if (mounted) {
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(const builder: (context) => const LoginScreen()),
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
                 );
               }
             },
@@ -231,7 +231,7 @@ class _MainDashboardState extends State<MainDashboard> {
             ),
             const SizedBox(height: 20),
             const Align(
-              alignment: AlignmentLeft,
+              alignment: Alignment.centerLeft,
               child: Text('Segnalazioni Attive:', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
             Expanded(
