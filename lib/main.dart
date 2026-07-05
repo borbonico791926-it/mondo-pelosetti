@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'sos_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
