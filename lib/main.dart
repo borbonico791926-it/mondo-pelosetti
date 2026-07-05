@@ -99,7 +99,25 @@ class _LoginScreenState extends State<LoginScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+          children: [ 
+            ElevatedButton(
+  style: ElevatedButton.styleFrom(
+    backgroundColor: Colors.red,
+    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+  ),
+  onPressed: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const SosScreen(),
+      ),
+    );
+  },
+  child: const Text(
+    "🚨 SOS ANIMALE IN PERICOLO",
+    style: TextStyle(fontSize: 16, color: Colors.white),
+  ),
+),
             TextField(
               controller: _emailController,
               decoration: const InputDecoration(labelText: 'Email'),
