@@ -8,29 +8,50 @@ class SosScreen extends StatefulWidget {
 }
 
 class _SosScreenState extends State<SosScreen> {
-  bool isSending = false;
+  String? animaleSelezionato;
+  String? razzaSelezionata;
 
-  void sendSOS() async {
-    setState(() {
-      isSending = true;
-    });
+  final TextEditingController etaController = TextEditingController();
+  final TextEditingController pesoController = TextEditingController();
+  final TextEditingController problemaController = TextEditingController();
 
-    await Future.delayed(const Duration(seconds: 2));
+  final List<String> animali = [
+    "Cane",
+    "Gatto",
+    "Coniglio",
+    "Uccello",
+    "Tartaruga",
+    "Pesce",
+    "Roditore",
+    "Rettile",
+    "Altro animale domestico",
+  ];
 
-    setState(() {
-      isSending = false;
-    });
+  final List<String> razze = [
+    "Meticcio",
+    "Labrador",
+    "Golden Retriever",
+    "Pastore Tedesco",
+    "Chihuahua",
+    "Persiano",
+    "Maine Coon",
+    "Europeo",
+    "Altra razza",
+  ];
 
-    if (!mounted) return;
-
+  void inviaSOS() {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("SOS animale in pericolo"),
-        content: const Text("Segnalazione inviata (test)."),
+        title: const Text("S.O.S. Animale in pericolo"),
+        content: const Text(
+          "Segnalazione inviata (test).",
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              Navigator.pop(context);
+            },
             child: const Text("OK"),
           )
         ],
@@ -42,43 +63,123 @@ class _SosScreenState extends State<SosScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("SOS Animale"),
+        title: const Text("S.O.S. Animale in pericolo"),
         backgroundColor: Colors.red,
       ),
-      body: Center(
-        child: isSending
-            ? const CircularProgressIndicator()
-            : Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    "SOS animale in pericolo",
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.red,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  const Icon(
-                    Icons.warning_amber_rounded,
-                    color: Colors.red,
-                    size: 120,
-                  ),
-                  const SizedBox(height: 30),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 50,
-                        vertical: 20,
-                      ),
-                    ),
-                    onPressed: sendSOS,
-                    child: const Text("INVIA SOS"),
-                  )
-                ],
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+
+            DropdownButtonFormField<String>(
+              decoration: const InputDecoration(
+                labelText: "Tipo di animale",
+                border: OutlineInputBorder(),
               ),
+             initialValue: animaleSelezionato,
+              items: animali.map((animale) {
+                return DropdownMenuItem(
+                  value: animale,
+                  child: Text(animale),
+                );
+              }).toList(),
+              onChanged: (valore) {
+                setState(() {
+                  animaleSelezionato = valore;
+                });
+              },
+            ),
+
+            const SizedBox(height: 15), 
+
+            DropdownButtonFormField<String>(
+              decoration: const InputDecoration(
+                labelText: "Razza",
+                border: OutlineInputBorder(),
+              ),
+              initialValue: razzaSelezionata,
+              items: razze.map((razza) {
+                return DropdownMenuItem(
+                  value: razza,
+                  child: Text(razza),
+                );
+              }).toList(),
+              onChanged: (valore) {
+                setState(() {
+                  razzaSelezionata = valore;
+                });
+              },
+            ),
+
+            const SizedBox(height: 15),
+
+            TextField(
+              controller: etaController,
+              decoration: const InputDecoration(
+                labelText: "Età dell'animale",
+                border: OutlineInputBorder(),
+              ),
+            ),
+
+            const SizedBox(height: 15),
+
+            TextField(
+              controller: pesoController,
+              decoration: const InputDecoration(
+                labelText: "Peso (kg)",
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+            ),
+
+            const SizedBox(height: 15),
+
+            TextField(
+              controller: problemaController,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                labelText: "Descrivi il problema",
+                border: OutlineInputBorder(),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            ElevatedButton.icon(
+              onPressed: () {},
+              icon: const Icon(Icons.photo),
+              label: const Text("Aggiungi foto"),
+            ),
+
+            const SizedBox(height: 10),
+
+            ElevatedButton.icon(
+              onPressed: () {},
+              icon: const Icon(Icons.location_on),
+              label: const Text("Usa la mia posizione"),
+            ),
+
+            const SizedBox(height: 25),
+
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  padding: const EdgeInsets.all(18),
+                ),
+                onPressed: inviaSOS,
+                child: const Text(
+                  "INVIA SOS",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -1,0 +1,27 @@
+class Animale {
+  final String nome;
+  final String icona;
+
+  const Animale({
+    required this.nome,
+    required this.icona,
+  });
+}
+
+const List<Animale> elencoAnimali = [
+  Animale(nome: "Cane", icona: "🐶"),
+  Animale(nome: "Gatto", icona: "🐱"),
+  Animale(nome: "Coniglio", icona: "🐰"),
+  Animale(nome: "Criceto", icona: "🐹"),
+  Animale(nome: "Cavia", icona: "🐹"),
+  Animale(nome: "Furetto", icona: "🦦"),
+  Animale(nome: "Uccello", icona: "🐦"),
+  Animale(nome: "Pappagallo", icona: "🦜"),
+  Animale(nome: "Canarino", icona: "🐤"),
+  Animale(nome: "Tartaruga terrestre", icona: "🐢"),
+  Animale(nome: "Tartaruga acquatica", icona: "🐢"),
+  Animale(nome: "Pesce d'acquario", icona: "🐠"),
+  Animale(nome: "Rettile", icona: "🦎"),
+  Animale(nome: "Serpente", icona: "🐍"),
+  Animale(nome: "Altro animale domestico", icona: "❤️"),
+];
