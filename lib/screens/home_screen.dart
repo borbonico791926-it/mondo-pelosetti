@@ -252,7 +252,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
 
 
-            DailyTipCard(
+            const DailyTipCard(
 
               titolo:
                   "Consiglio del giorno",
@@ -304,15 +304,32 @@ class _HomeScreenState extends State<HomeScreen> {
                   final categoria = categorie[index];
 
 
-                  return CategoryCard(
-
+                 return CategoryCard(
+ 
                     titolo: categoria["nome"] as String,
 
                     icona: categoria["icona"] as IconData,
 
                     colore: categoria["colore"] as Color,
 
-                    onTap: () {},
+                    onTap: () {
+
+  Navigator.push(
+
+    context,
+
+    MaterialPageRoute(
+
+      builder: (context) =>
+          CategoryAnimalsScreen(
+            categoria: categoria["nome"] as String,
+          ),
+
+    ),
+
+  );
+
+},
 
                   );
 
